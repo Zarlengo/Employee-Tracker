@@ -1,96 +1,10 @@
-
-const test_mode = false;
-
-const mySQL = require('mysql');
+const SQL = require("./Assets/sql");
+const inquirer = require("inquirer");
 const fs = require("fs");
 const { printTable } = require('console-table-printer');
 
 
-const db = mySQL.createConnection({
-    host: 'localhost',
-    port: 3306,
-    user: 'developer',
-    password: 'password',
-    database: '',
-    insecureAuth : true,
-    multipleStatements: true
-});
 
-const dbOpen = () => {
-    db.connect((err) => {
-        if (err) {
-            throw err;
-        }
-    });
-};
-
-const dbClose = () => {
-    db.end();
-};
-
-function sqlQuery (sql_string, parameters = []) {
-    db.query(sql_string, parameters, (err, result, fields) => {
-        if (err) throw err;
-        printTable(result);
-    });
-}
-
-async function init() {
-    await dbOpen();
-
-    if (test_mode) {
-
-        const sql_seed_text = fs.readFileSync("./seed.sql", "utf8", (error, data) => {
-            if (error) throw error;
-        });
-
-        await sqlQuery(sql_seed_text, []);
-
-    }
-/*
-// EXTRA: View all employees grouped by manager
-    for(let i = 0; i < manager_array.length; i++) {
-        await sqlQuery(await viewEmployees(view_employees_of_manager), [manager_array[i]]);
-    }
-*/
-
-// EXTRA: View all employees grouped by department
-    for(let i = 0; i < department_array.length; i++) {
-        await sqlQuery(await viewEmployees(view_employees_of_department), [department_array[i]]);
-    }  
-    
-
-
-
-// View all employees
-    // await sqlQuery(await viewEmployees(), []);
-
-// View employees by department
-    // await sqlQuery(await viewEmployees(view_employees_of_department), [2]);
-    
-// View employees by manager
-    // await sqlQuery(await viewEmployees(view_employees_of_manager), [19]);
-
-// View all managers
-    // await sqlQuery(await viewEmployees(view_managers), []);
-
-// View all roles
-    // await sqlQuery(view_roles, []);
-
-// View all departments
-    // await sqlQuery(view_departments, []);
-
-// View total utilized budget by department
-    // await sqlQuery(view_budget_by_department, []);
-
-// View total utilized budget by manager
-    // await sqlQuery(view_budget_by_manager, []);
-
-
-
-    await dbClose();
-
-}
 /* MENU OPTIONS
 View all employees
 View employees by department
@@ -120,68 +34,313 @@ Update role salary
 
 */
 
-const viewEmployees = (clauses = {"where": "", "from": "FROM employee_tracker.employee"}) => {
-    return [
-        "SELECT employee.id AS 'Employee ID', employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Title', department.name AS Department, CONCAT('$ ', FORMAT(role.salary, 2)) AS Salary, CONCAT(manager.first_name, ' ', manager.last_name) AS 'Manager'",
-        `${ clauses.from }`,
-        "LEFT JOIN employee_tracker.employee AS manager ON employee.manager_id = manager.id",
-        "LEFT JOIN employee_tracker.role ON employee.role_id = role.id",
-        "LEFT JOIN employee_tracker.department ON department.id = role.department_id",
-        `${ clauses.where }`,
-        "ORDER BY employee.last_name ASC;"
-    ].join(" ");
+
+
+const what_to_do_question = (default_selection) => {
+    return [{
+            type: "list",
+            name: "what_to_do",
+            message: "What would you like to do?",
+            choices: [
+                "View all employees",
+                "View employees by department",
+                "View employees by manager",
+                "View all managers",
+                "View all roles",
+                "View all departments",
+                "View total utilized budget by department",
+                "View total utilized budget by manager",
+                "Add employee",
+                "Remove employee",
+                "Update employee name",
+                "Update employee role",
+                "Update employee manager",
+                "-- Administration Options --",
+                "Exit"
+            ],
+            default: default_selection
+        }];
 }
 
-// View employees by department
-const department_array = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-const view_employees_of_department = {"where": "WHERE department.id = ?", "from": "FROM employee_tracker.employee"};
+async function choose_a_department (all_departments) {
+    const department_list = [];
+    let department_object = {};
+    all_departments.forEach(department => department_list.push({name: department.name, id: department.id}));
+    const department_question =  [{
+        type: "list",
+        name: "department",
+        message: "Please choose a department",
+        choices: department_list.map(department => department.name)
+    }];
+    await inquirer.prompt(department_question)
+        .then(response => department_object = response)
+        .catch(error => console.log(error));
 
-// View employees by manager
-const manager_array = [3, 13, 19, 26, 43, 58, 64];
-const view_employees_of_manager = {"where": "WHERE employee.manager_id = ?", "from": "FROM employee_tracker.employee"};
+    return department_list.filter(department => department.name == department_object.department)[0];
+}
 
-// View all managers
-const view_managers = {"where": "", "from": [
-        "FROM (SELECT DISTINCT employee.manager_id",
-            "FROM employee_tracker.employee",
-            "WHERE manager_id IS NOT NULL) AS manager_list",
-        "LEFT JOIN employee_tracker.employee ON employee.id = manager_list.manager_id"
-    ].join(" ")};
+async function add_an_employee (firstname = "", nickname = "", lastname = "") {
+    let employee_object = {};
+    const new_employee_questions =  [{
+        type: "input",
+        name: "firstname",
+        message: "Please enter the employee's first name",
+        default: firstname,
+        validate: (name) => name !== ""
+    },{
+        type: "input",
+        name: "nickname",
+        message: "Please enter the employee's prefered name (can leave blank to use the first name)",
+        default: nickname,
+    },{
+        type: "input",
+        name: "lastname",
+        message: "Please enter the employee's last name",
+        default: lastname,
+        validate: (name) => name !== ""
+    }];
 
-// View all roles
-const view_roles = [
-        "SELECT title AS 'Job Title', CONCAT('$', FORMAT(salary, 2)) AS 'Salary', name AS 'Department Name'",
-        "FROM employee_tracker.role",
-        "LEFT JOIN employee_tracker.department ON role.department_id = department.id",
-        "ORDER BY name"
-    ].join(" ");
+    await inquirer.prompt(new_employee_questions)
+        .then(response => {employee_object = response;})
+        .catch(error => console.log(error));
 
-// View all departments
-const view_departments = [
-        "SELECT name AS 'Department Name'",
-        "FROM employee_tracker.department",
-        "ORDER BY name"
-    ].join(" ");
+    return employee_object;
+}
+
+async function choose_a_manager(all_managers) {
+    const manager_list = [];
+    let manager_object = {};
+    all_managers.forEach(manager => manager_list.push({name: `${ manager["First Name"] } ${manager["Last Name"]} (${ manager.Department})`, id: manager["Employee ID"]}));
+
+    const manager_selection =  [{
+        type: "list",
+        name: "manager_name",
+        message: "Please choose the manager",
+        choices: manager_list.map(manager => manager.name)
+    }];
+    await inquirer.prompt(manager_selection)
+        .then(response => manager_object = response)
+        .catch(error => console.log(error));
+
+    return manager_list.filter(manager => manager.name == manager_object.manager_name)[0];
+}
+
+async function choose_a_role(all_roles) {
+    const role_list = [];
+    let role_object = {};
+    all_roles.forEach(role => role_list.push({name: `${role.title} (${role.name})`, id: role.id}));
+
+    const role_selection =  [{
+        type: "list",
+        name: "role_name",
+        message: "Please select the role",
+        choices: role_list.map(role => role.name)
+    }];
+    await inquirer.prompt(role_selection)
+        .then(response => role_object = response)
+        .catch(error => console.log(error));
+
+    return role_list.filter(role => role.name == role_object.role_name)[0];
+}
+
+async function choose_an_employee(all_employees) {
+    let employee_object = {};
+    const employee_list = [];
+    all_employees.forEach(employee => employee_list.push({
+        name: `${ employee.first_name } ${employee.last_name} (${ employee.title})`, 
+        id: employee.id,
+        firstname: employee.first_name, 
+        lastname: employee.last_name,
+        role_id: employee.role_id,
+        manager_id: employee.manager_id
+    }));
+    const employee_selection =  [{
+        type: "list",
+        name: "employee_name",
+        message: "Please choose the employee",
+        choices: employee_list.map(employee => employee.name)
+    }];
+    await inquirer.prompt(employee_selection)
+        .then(response => employee_object = response)
+        .catch(error => console.log(error));
+
+    return employee_list.filter(employee => employee.name == employee_object.employee_name)[0];
+}
+
+async function init () {
+    const SQL_object =  new SQL();
+    await load_welcome()
+        .then(data => console.log(data))
+        .catch(error => console.log(error));
+
+    let run_loop = true;
+    let default_selection = "View All Employees"
+    while (run_loop) {
+        // What would you like to do?
+        await inquirer.prompt(what_to_do_question(default_selection))
+            .then(async function (response) {
+                let all_employees;
+                let all_roles;
+                let all_departments;
+                let all_managers;
+
+                let employee;
+                let role;
+                let department;
+                let manager;
+
+                let employee_object;
 
 
-// View total utilized budget by department
-const view_budget_by_department = [
-    "SELECT department.name as Department, CONCAT('$ ', FORMAT(role.salary, 2)) AS 'Total Utilized Budget'",
-    "FROM employee_tracker.employee ",
-    "LEFT JOIN employee_tracker.role ON employee.role_id = role.id",
-    "LEFT JOIN employee_tracker.department ON department.id = role.department_id",
-    "GROUP BY department.id;"
-].join(" ");
+                default_selection = response.what_to_do;
+                switch(default_selection) {
+                    case "View all employees":
+                        printTable(await SQL_object.getAllEmployees());
+                        return;
 
-// View total utilized budget by manager
-const view_budget_by_manager = [
-    "SELECT CONCAT(manager.first_name, ' ', manager.last_name) AS 'Manager', CONCAT('$ ', FORMAT(role.salary, 2)) AS 'Total Utilized Budget'",
-    "FROM employee_tracker.employee ",
-    "LEFT JOIN employee_tracker.employee AS manager ON employee.manager_id = manager.id",
-    "LEFT JOIN employee_tracker.role ON employee.role_id = role.id",
-    "LEFT JOIN employee_tracker.department ON department.id = role.department_id",
-    "WHERE employee.manager_id IS NOT NULL",
-    "GROUP BY employee.manager_id;"
-].join(" ");
+                    case "View employees by department":
+                        all_departments = await SQL_object.getDepartmentsWithID()
+                        department = await choose_a_department(all_departments);
+                        console.log(department);
+                        printTable(await SQL_object.getEmployeesByDepartment(department.id));
+                        return;
+
+                    case "View employees by manager":
+                        all_managers = await SQL_object.getAllManagers();
+                        manager = await choose_a_manager(all_managers);
+                        printTable(await SQL_object.getEmployeesByManager(manager.id));
+                        return;
+
+                    case "View all managers":
+                        printTable(await SQL_object.getAllManagers());
+                        return;
+
+                    case "View all roles":
+                        printTable(await SQL_object.getAllRoles());
+                        return;
+
+                    case "View all departments":
+                        printTable(await SQL_object.getAllDepartments());
+                        return;
+
+                    case "View total utilized budget by department":
+                        printTable(await SQL_object.getBudgetByDepartment());
+                        return;
+
+                    case "View total utilized budget by manager":
+                        printTable(await SQL_object.getBudgetByManager());
+                        return;
+
+                    case "Add employee":
+                        all_managers = await SQL_object.getAllManagers();
+                        all_roles = await SQL_object.getRolesWithId();
+                        employee = await add_an_employee();
+                        role = await choose_a_role(all_roles);
+                        manager = await choose_a_manager(all_managers);
+                        employee.role_id = role.id;
+                        employee.manager_id = manager.id;
+                        await SQL_object.insertEmployee(employee);
+                        printTable(await SQL_object.getAllEmployees());
+                        console.log(`${employee.firstname} ${employee.lastname} has been added to the system.`);
+                        return;
+
+                    case "Remove employee":
+                        all_employees = await SQL_object.getEmployeesWithId();
+                        all_managers = await SQL_object.getAllManagers();
+                        employee = await choose_an_employee(all_employees);
+
+                        // Managers are foreign keys to employees, deleting a manager will result in a SQL error
+                        if (all_managers.filter(manager => manager["Employee ID"]  == employee.id).length == 0) {
+                            await SQL_object.deleteEmployee(employee.id);
+                            printTable(await SQL_object.getAllEmployees());
+                            console.log(`${employee.name} has been removed from the system.`);
+                            return;
+                        } else {
+                            printTable(await SQL_object.getEmployeesByManager(employee.id));
+                            console.log(`${employee.name} is a manager and was not removed from the system. To delete this person, please change the current manager for all employees under ${employee.name}, see table.`);
+                            return;
+                        }
+
+                    case "Update employee name":
+                        all_employees = await SQL_object.getEmployeesWithId();
+                        employee = await choose_an_employee(all_employees);
+                        const new_name = await add_an_employee(employee.firstname, "", employee.lastname);
+                        employee_object = {
+                            id: employee.id,
+                            firstname: new_name.firstname,
+                            nickname: new_name.nickname,
+                            lastname: new_name.lastname,
+                            role_id: employee.role_id,
+                            manager_id:employee.manager_id
+                        };
+                        await SQL_object.updateEmployee(employee_object);
+                        printTable(await SQL_object.getAllEmployees());
+                        console.log(`${employee.name} has been updated in the system to ${new_name.firstname} ${new_name.lastname}.`);
+                        return;
+
+                    case "Update employee role":
+                        all_employees = await SQL_object.getEmployeesWithId();
+                        all_roles = await SQL_object.getRolesWithId();
+                        employee = await choose_an_employee(all_employees);
+                        const new_role = await choose_a_role(all_roles);
+                        console.log(new_role);
+                        employee_object = {
+                            id: employee.id,
+                            firstname: employee.firstname,
+                            nickname: employee.nickname,
+                            lastname: employee.lastname,
+                            role_id: new_role.id,
+                            manager_id:employee.manager_id
+                        };
+                        console.log(employee_object);
+                        await SQL_object.updateEmployee(employee_object);
+                        printTable(await SQL_object.getAllEmployees());
+                        console.log(`${employee.name} has been updated in the system with role ${new_role.name}.`);
+                        return;
+
+                    case "Update employee manager":
+                        all_employees = await SQL_object.getEmployeesWithId();
+                        all_managers = await SQL_object.getAllManagers();
+                        employee = await choose_an_employee(all_employees);
+                        const new_manager = await choose_a_manager(all_managers);
+                        console.log(new_manager);
+                        employee_object = {
+                            id: employee.id,
+                            firstname: employee.firstname,
+                            nickname: employee.nickname,
+                            lastname: employee.lastname,
+                            role_id: employee.role_id,
+                            manager_id:new_manager.id
+                        };
+
+                        await SQL_object.updateEmployee(employee_object);
+                        printTable(await SQL_object.getAllEmployees());
+                        console.log(`${employee.name} has been updated in the system with manager ${new_manager.name}.`);
+                        return;
+
+                    case "-- Administration Options --":
+
+                    case "Exit":
+                    default:
+                        run_loop = false;
+                        console.log("Thank you for using this program, your session has been terminated.")
+                        break;
+                }
+            })
+            .catch(error => console.log(error));
+    }
+}
+
+const load_welcome = () => {
+    return new Promise((resolve, reject) => {
+        fs.readFile("./Assets/welcome.txt", "utf8", (err, data) => {
+            if (err) {
+                reject(err);
+            }
+            resolve(data);
+        });
+    });
+
+}
 
 init();
