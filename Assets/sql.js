@@ -57,6 +57,9 @@ class SQL {
 
         // Function to add a new employee to the database
         this.employees.insert = (employee_object) => {
+            if (employee_object.nickname == "") {
+                employee_object.nickname = null;
+            }
             const employee_array = [
                 employee_object.firstname, 
                 employee_object.nickname, 
@@ -70,6 +73,10 @@ class SQL {
 
         // Function to update an existing employee in the database
         this.employees.update = (employee_object) => {
+            if (employee_object.nickname == "") {
+                employee_object.nickname = null;
+            }
+
             const employee_array = [
                 employee_object.firstname, 
                 employee_object.nickname, 
@@ -369,7 +376,7 @@ class SQL {
     // Function to get the sql format for the printable version of the employee's information. Keeps it consistent and in 1 place for any SQL query
     viewEmployees = (clauses = {"where": "", "from": "FROM employee_tracker.employee"}) => {
         return [
-            "SELECT employee.id AS 'Employee ID', employee.first_name AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Title', department.name AS Department, CONCAT('$ ', FORMAT(role.salary, 2)) AS Salary, CONCAT(manager.first_name, ' ', manager.last_name) AS 'Manager'",
+            "SELECT employee.id AS 'Employee ID', COALESCE(CONCAT(employee.first_name, ' (', employee.nickname, ')'), employee.first_name) AS 'First Name', employee.last_name AS 'Last Name', role.title AS 'Title', department.name AS Department, CONCAT('$ ', FORMAT(role.salary, 2)) AS Salary, CONCAT(COALESCE(CONCAT(manager.first_name, ' (', manager.nickname, ')'), manager.first_name), ' ', manager.last_name) AS 'Manager'",
             `${ clauses.from }`,
             "LEFT JOIN employee_tracker.employee AS manager ON employee.manager_id = manager.id",
             "LEFT JOIN employee_tracker.role ON employee.role_id = role.id",

@@ -4,21 +4,6 @@ const inquirer = require("inquirer");
 const fs = require("fs");
 const { printTable } = require('console-table-printer');
 
-
-/*
--- Administration Options --
-Add department
-Remove department
-Update department name
-
-Add role
-Remove role
-Update role title
-Update role salary
-
-*/
-
-
 // Primary question bank for the menu options, default is set to the last selected choice
 const what_to_do_question = (default_selection) => {
     return [{
@@ -106,6 +91,7 @@ const choose_an_employee = async (all_employees) => {
         id: employee.id,
         firstname: employee.first_name, 
         lastname: employee.last_name,
+        nickname: employee.nickname,
         role_id: employee.role_id,
         manager_id: employee.manager_id
     }));
@@ -360,7 +346,7 @@ const init = async () => {
                 case "Update employee name":
                     all_employees = await SQL_object.employees.data();
                     employee = await choose_an_employee(all_employees);
-                    const new_name = await add_an_employee(employee.firstname, "", employee.lastname);
+                    const new_name = await add_an_employee(employee.firstname, employee.nickname, employee.lastname);
                     employee_object = {
                         id: employee.id,
                         firstname: new_name.firstname,
