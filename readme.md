@@ -2,7 +2,7 @@
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 
 ## Description
-A node based CLI to manage an organization employee database, including heirarchy for employee / manager relationships
+A node based CLI to manage an organization employee database, including hierarchy for employee / manager relationships
 
 ## Table of Contents
 
@@ -10,8 +10,7 @@ A node based CLI to manage an organization employee database, including heirarch
 2. [Usage](#2-usage)
 3. [License](#3-license)
 4. [Contributing](#4-contributing)
-5. [Tests](#5-tests)
-6. [Questions](#6-questions)
+5. [Questions](#5-questions)
 
 ## 1 Installation
 1. Download repository
@@ -268,11 +267,7 @@ Allows updating of a departments name. Current name shows as default and will be
 ## 4 Contributing
 * [Zarlengo](https://github.com/Zarlengo)
 
-
-## 5 Tests
-1. Test stuff
-
-## 6 Questions
+## 5 Questions
 * [Github Profile for Zarlengo](https://github.com/Zarlengo)
 * [Send email to christopher@zarlengo.net](mailto:christopher@zarlengo.net)
 * [File an issue](https://github.com/Zarlengo/Employee-Tracker/issues)
