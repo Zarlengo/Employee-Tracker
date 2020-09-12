@@ -8,7 +8,7 @@ class SQL {
         this.parameters = {};
         this.parameters.host = 'localhost';
         this.parameters.port = 3306;
-        this.parameters.user = 'developer';
+        this.parameters.user = 'root';
         this.parameters.password = 'password';
         this.parameters.database = '';
         this.parameters.insecureAuth = true;

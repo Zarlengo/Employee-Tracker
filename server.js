@@ -67,7 +67,7 @@ const add_an_employee = async (firstname = "", nickname = "", lastname = "") => 
     },{
         type: "input",
         name: "nickname",
-        message: "Please enter the employee's prefered name (can leave blank to use the first name)",
+        message: "Please enter the employee's preferred name (can leave blank to use the first name)",
         default: nickname,
     },{
         type: "input",
