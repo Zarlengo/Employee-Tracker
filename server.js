@@ -155,7 +155,7 @@ const add_a_department = async (department_name = "") => {
     const new_department_questions =  [{
         type: "input",
         name: "department_name",
-        message: "Please enter the title for the role",
+        message: "Please enter a name for the department",
         default: department_name,
         validate: (name) => name !== ""
     }];
@@ -206,7 +206,7 @@ const choose_a_manager = async (all_managers) => {
 const init = async () => {
 
     // Loads the SQL class as an object
-    const SQL_object =  new SQL(true);
+    const SQL_object =  new SQL();
 
     try {
         // SQL_object.resetDB(); will force a reset and load seed file to the database
@@ -365,7 +365,6 @@ const init = async () => {
                     all_roles = await SQL_object.roles.data();
                     employee = await choose_an_employee(all_employees);
                     const new_role = await choose_a_role(all_roles);
-                    console.log(new_role);
                     employee_object = {
                         id: employee.id,
                         firstname: employee.firstname,
@@ -374,7 +373,6 @@ const init = async () => {
                         role_id: new_role.id,
                         manager_id:employee.manager_id
                     };
-                    console.log(employee_object);
                     await SQL_object.employees.update(employee_object);
                     printTable(await SQL_object.employees.all());
                     console.log(`${employee.name} has been updated in the system with role ${new_role.name}.\n`);
@@ -470,7 +468,6 @@ const admin = async (SQL_object) => {
                 case "Update role title and salary":
                     all_roles = await SQL_object.roles.data();
                     role = await choose_a_role(all_roles);
-                    console.log(role);
                     const new_role = await add_a_role(role.title, role.salary);
                     role_object = {
                         id: role.id,
@@ -501,7 +498,6 @@ const admin = async (SQL_object) => {
 
                 case "Add department":
                     department = await add_a_department();
-                    console.log(department);
                     await SQL_object.departments.insert(department);
                     printTable(await SQL_object.departments.all());
                     console.log(`${department.department_name} has been added to the system.\n`);
